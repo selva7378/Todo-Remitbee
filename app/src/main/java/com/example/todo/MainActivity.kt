@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
-import com.example.todo.presentation.screen.Todo
+import com.example.todo.presentation.screen.TodoScreen
 import com.example.todo.presentation.theme.ToDoTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -18,8 +20,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             ToDoTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Todo(
-                        name = "Android",
+                    TodoScreen(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
