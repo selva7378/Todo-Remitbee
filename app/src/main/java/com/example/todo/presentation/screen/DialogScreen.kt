@@ -17,10 +17,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.todo.domain.model.Todo
@@ -28,13 +24,16 @@ import com.example.todo.domain.model.Todo
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoDialog(
+    title: String = "",
+    isError: Boolean = false,
+    onTitleChange: (String) -> Unit = {},
+    onErrorChange: (Boolean) -> Unit = {},
     todo: Todo? = null,
     onDismiss: () -> Unit,
     onConfirm: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var title by rememberSaveable { mutableStateOf(todo?.title ?: "") }
-    var isError by rememberSaveable { mutableStateOf(false) }
+
 
     val isEditMode = todo != null
 
@@ -59,10 +58,7 @@ fun TodoDialog(
 
                 OutlinedTextField(
                     value = title,
-                    onValueChange = {
-                        title = it
-                        isError = it.isBlank()
-                    },
+                    onValueChange = onTitleChange,
                     label = { Text("Title") },
                     placeholder = { Text("Enter a title")},
                     singleLine = true,
@@ -88,7 +84,7 @@ fun TodoDialog(
                             if (trimmed.isNotEmpty()) {
                                 onConfirm(trimmed)
                             } else {
-                                isError = true
+                                onErrorChange(true)
                             }
                         }
                     ) {

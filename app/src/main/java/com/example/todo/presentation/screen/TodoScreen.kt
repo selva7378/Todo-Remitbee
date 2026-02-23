@@ -23,9 +23,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextDecoration
@@ -44,16 +41,14 @@ fun TodoScreen(
     modifier: Modifier = Modifier
 ) {
     val todoState by viewModel.uiState.collectAsState()
-    var selectedTodo by rememberSaveable { mutableStateOf<Todo?>(null) }
-    var showDialog by rememberSaveable { mutableStateOf(false) }
+
 
 
     Scaffold(
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
-                    selectedTodo = null
-                    showDialog = true
+                    viewModel.onAddClick()
                 }
             ) {
                 Icon(Icons.Default.Add, null)
@@ -65,8 +60,7 @@ fun TodoScreen(
             is TodoUiState.Success -> TodoListScreen(
                 todos = (todoState as TodoUiState.Success).todos,
                 onCardClick = { todo ->
-                    selectedTodo = todo
-                    showDialog = true
+                    viewModel.onTodoClick(todo)
                 },
                 onCheckBoxChange = { todo, isChecked ->
                     viewModel.updateTodo(todo.copy(isCompleted = isChecked))
@@ -78,18 +72,18 @@ fun TodoScreen(
             )
         }
 
-        if (showDialog) {
+        if (viewModel.showDialog) {
             TodoDialog(
-                todo = selectedTodo,
-                onDismiss = { showDialog = false },
+                title = viewModel.title,
+                isError = viewModel.isError,
+                onTitleChange = { title ->
+                    viewModel.onTitleChange(title)
+                },
+                onErrorChange = { isError -> viewModel.updateErrorStatus(isError) },
+                todo = viewModel.selectedTodo,
+                onDismiss = { viewModel.dismissDialog() },
                 onConfirm = { title ->
-
-                    if (selectedTodo == null) {
-                        viewModel.addTodo(title)
-                    } else {
-                        viewModel.updateTodo(selectedTodo!!.copy(title = title))
-                    }
-                    showDialog = false
+                    viewModel.saveTodo(title)
                 }
             )
         }

@@ -1,5 +1,8 @@
 package com.example.todo.presentation.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.todo.domain.model.Todo
@@ -17,9 +20,20 @@ class TodoViewModel @Inject constructor(
     private val todoRepository: TodoRepository
 ): ViewModel() {
 
+     var title by   mutableStateOf("")
+         private set
+
     private val _uiState = MutableStateFlow<TodoUiState>(TodoUiState.Loading)
     val uiState = _uiState.asStateFlow()
 
+    var selectedTodo by mutableStateOf<Todo?>(null)
+        private set
+
+    var showDialog by  mutableStateOf(false)
+        private  set
+
+    var isError by  mutableStateOf(false)
+        private set
 
     init {
         viewModelScope.launch {
@@ -46,6 +60,41 @@ class TodoViewModel @Inject constructor(
         viewModelScope.launch {
             todoRepository.delete(todo)
         }
+    }
+
+    fun onAddClick() {
+        selectedTodo = null
+        showDialog = true
+    }
+
+    fun dismissDialog() {
+        showDialog = false
+        selectedTodo = null
+        title = ""
+    }
+
+    fun onTodoClick(todo: Todo) {
+        selectedTodo = todo
+        showDialog = true
+        title = todo.title
+    }
+
+    fun saveTodo(title: String) {
+        val currentTodo = selectedTodo
+        if(currentTodo == null) {
+            addTodo(title)
+        } else {
+            updateTodo(currentTodo.copy(title = title))
+        }
+        dismissDialog()
+    }
+
+    fun updateErrorStatus(bool: Boolean) {
+        isError = bool
+    }
+
+    fun onTitleChange(title: String) {
+        this.title = title
     }
 
 
