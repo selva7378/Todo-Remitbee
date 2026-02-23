@@ -1,5 +1,6 @@
 package com.example.todo.presentation.screen
 
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -98,7 +99,12 @@ fun TodoListScreen(
     onDelete: (Todo) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    LazyColumn(modifier = modifier) {
+    LazyColumn(
+        contentPadding = PaddingValues(
+            bottom = 80.dp,
+        ),
+        modifier = modifier,
+    ) {
         items(todos) { todo ->
             TodoCard(
                 todo = todo,
