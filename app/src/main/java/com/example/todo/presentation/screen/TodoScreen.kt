@@ -10,11 +10,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -22,7 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.todo.domain.model.Todo
 import com.example.todo.presentation.state.TodoUiState
-import com.example.todo.presentation.theme.ToDoTheme
+import com.example.todo.presentation.theme.TodoTheme
 import com.example.todo.presentation.viewmodel.TodoViewModel
 
 
@@ -42,8 +44,8 @@ fun TodoScreen(
     modifier: Modifier = Modifier
 ) {
     val todoState by viewModel.uiState.collectAsState()
-    var selectedTodo by remember { mutableStateOf<Todo?>(null) }
-    var showDialog by remember { mutableStateOf(false) }
+    var selectedTodo by rememberSaveable { mutableStateOf<Todo?>(null) }
+    var showDialog by rememberSaveable { mutableStateOf(false) }
 
 
     Scaffold(
@@ -68,6 +70,9 @@ fun TodoScreen(
                 },
                 onCheckBoxChange = { todo, isChecked ->
                     viewModel.updateTodo(todo.copy(isCompleted = isChecked))
+                },
+                onDelete = { todo ->
+                    viewModel.deleteTodo(todo)
                 },
                 Modifier.padding(paddingValues)
             )
@@ -96,6 +101,7 @@ fun TodoListScreen(
     todos: List<Todo>,
     onCardClick: (Todo) -> Unit,
     onCheckBoxChange: (Todo, Boolean) -> Unit,
+    onDelete: (Todo) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier) {
@@ -103,9 +109,13 @@ fun TodoListScreen(
             TodoCard(
                 todo = todo,
                 onCheckBoxChange = onCheckBoxChange,
-                onClick = {
+                onCardClick = {
                     onCardClick(todo)
-                }
+                },
+                onDelete = {
+                    onDelete(todo)
+                },
+                modifier = Modifier.padding(8.dp)
             )
         }
     }
@@ -116,13 +126,12 @@ fun TodoListScreen(
 fun TodoCard(
     todo: Todo,
     onCheckBoxChange: (Todo, Boolean) -> Unit,
-    onClick: () -> Unit,
+    onCardClick: () -> Unit,
+    onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        onClick = {
-            onClick()
-        },
+        onClick = onCardClick,
         shape = RoundedCornerShape(8.dp),
         modifier = modifier,
     ) {
@@ -157,6 +166,17 @@ fun TodoCard(
                 modifier = Modifier.weight(1f),
             )
 
+            IconButton(
+                onClick = onDelete
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete Todo",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
+
+
         }
     }
 }
@@ -166,7 +186,7 @@ fun TodoCard(
 @Preview(showBackground = true)
 @Composable
 fun TodoScreenPreview() {
-    ToDoTheme {
+    TodoTheme {
         TodoScreen()
     }
 }
