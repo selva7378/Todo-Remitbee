@@ -29,8 +29,14 @@ class TodoViewModel @Inject constructor(
     var selectedTodo by mutableStateOf<Todo?>(null)
         private set
 
+    var showPermissionDialog by mutableStateOf(false)
+        private set
     var showDialog by  mutableStateOf(false)
         private  set
+
+    var showTimePicker by mutableStateOf(false)
+        private set
+
 
     var isError by  mutableStateOf(false)
         private set
@@ -95,6 +101,23 @@ class TodoViewModel @Inject constructor(
 
     fun onTitleChange(title: String) {
         this.title = title
+    }
+
+    fun showTimePicker() {
+        showTimePicker = true
+    }
+
+    fun dismissTimePicker() {
+        showTimePicker = false
+    }
+
+    fun showPermissionDialog() {
+        showPermissionDialog = true
+    }
+
+    fun dismissPermissionDialog() {
+        showPermissionDialog = false
+
     }
 
 

@@ -1,9 +1,21 @@
 package com.example.todo.presentation.screen
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,7 +23,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Alarm
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -20,15 +35,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.todo.domain.model.Todo
 import com.example.todo.presentation.state.TodoUiState
@@ -43,17 +66,55 @@ fun TodoScreen(
 ) {
     val todoState by viewModel.uiState.collectAsState()
 
+    val context = LocalContext.current
+
+    val notificationPermissionLauncher =
+        rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.RequestPermission()
+        ) { isGranted ->
+            if (isGranted) {
+                viewModel.showTimePicker()
+            }
+        }
 
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    viewModel.onAddClick()
-                }
-            ) {
-                Icon(Icons.Default.Add, null)
-            }
+            FloatingActionMenu(
+                onReminderClick = {
+
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+
+                        when {
+                            ContextCompat.checkSelfPermission(
+                                context,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) == PackageManager.PERMISSION_GRANTED -> {
+
+                                viewModel.showTimePicker()
+                            }
+
+                            ActivityCompat.shouldShowRequestPermissionRationale(
+                                context as Activity,
+                                Manifest.permission.POST_NOTIFICATIONS
+                            ) -> {
+                                // Show rationale dialog
+                                viewModel.showPermissionDialog()
+                            }
+
+                            else -> {
+                                notificationPermissionLauncher.launch(
+                                    Manifest.permission.POST_NOTIFICATIONS
+                                )
+                            }
+                        }
+
+                    } else {
+                        viewModel.showTimePicker()
+                    }
+                },
+                onAddClick = { viewModel.onAddClick() }
+            )
         }
     ) { paddingValues ->
         when (todoState) {
@@ -85,6 +146,40 @@ fun TodoScreen(
                 onDismiss = { viewModel.dismissDialog() },
                 onConfirm = { title ->
                     viewModel.saveTodo(title)
+                }
+            )
+        }
+
+        if (viewModel.showTimePicker) {
+            DialExample(
+                onConfirm = { viewModel.dismissTimePicker() },
+                onDismiss = { viewModel.dismissTimePicker() }
+            )
+        }
+
+        if (viewModel.showPermissionDialog) {
+            AlertDialog(
+                onDismissRequest = { viewModel.dismissPermissionDialog() },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.dismissPermissionDialog()
+                            openAppSettings(context)
+                        }
+                    ) {
+                        Text("Open Settings")
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { viewModel.dismissPermissionDialog() }
+                    ) {
+                        Text("Cancel")
+                    }
+                },
+                title = { Text("Notification Permission Required") },
+                text = {
+                    Text("To set reminders, notification permission is required. Please enable it in settings.")
                 }
             )
         }
@@ -181,6 +276,64 @@ fun TodoCard(
     }
 }
 
+@Composable
+fun FloatingActionMenu(
+    onReminderClick: () -> Unit,
+    onAddClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    Column()
+    {
+        if (expanded) {
+
+            SmallFloatingActionButton(
+                onClick = {
+                    expanded = false
+                    onReminderClick()
+                }
+
+            ) {
+                Icon(Icons.Default.Alarm, "Set Alarm")
+
+            }
+
+            Spacer(Modifier.height(8.dp))
+
+            SmallFloatingActionButton(
+                onClick = {
+                    expanded = false
+                    onAddClick()
+                }
+
+            ) {
+                Icon(Icons.Default.Add, "Add Todo")
+
+            }
+
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        FloatingActionButton(
+            onClick = { expanded = !expanded }
+        ) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.Close else Icons.Default.Add,
+                contentDescription = if (expanded) "Close" else "Add"
+            )
+        }
+    }
+}
+
+fun openAppSettings(context: Context) {
+    val intent = Intent(
+        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+        Uri.fromParts("package", context.packageName, null)
+    )
+    context.startActivity(intent)
+}
 
 
 @Preview(showBackground = true)
